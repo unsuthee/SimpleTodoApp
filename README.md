@@ -5,5 +5,5 @@ Application: Simple Todo List
 
 Key Features:
 
-Add/Remove Todo item
-Edit Todo item
+- Add/Remove Todo item
+- Edit Todo item
