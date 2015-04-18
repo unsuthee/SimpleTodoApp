@@ -33,11 +33,9 @@ public class MainActivity extends ActionBarActivity {
         lvItems = (ListView) findViewById(R.id.lvItems);
 
         readItems();
-        itemsAdapter = new ArrayAdapter<String>(this,
+        itemsAdapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1, items);
         lvItems.setAdapter(itemsAdapter);
-        items.add("First Item");
-        items.add("Second Item");
         setupListViewListener();
     }
 
@@ -92,9 +90,11 @@ public class MainActivity extends ActionBarActivity {
     public void OnAddItem(View v) {
         EditText etNewItem = (EditText) findViewById(R.id.etNewItem);
         String itemText = etNewItem.getText().toString();
-        itemsAdapter.add(itemText);
-        etNewItem.setText("");
-        writeItems();
+        if (! itemText.isEmpty()) {
+            itemsAdapter.add(itemText);
+            etNewItem.setText("");
+            writeItems();
+        }
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -104,7 +104,7 @@ public class MainActivity extends ActionBarActivity {
             int position = data.getIntExtra(getString(R.string.Intent_List_Position), -1);
             if (position >= 0 && position < itemsAdapter.getCount()) {
                 // We don't update if the itemText remains unchanged
-                if (items.get(position) != itemText) {
+                if (! items.get(position).equals(itemText)) {
                     items.remove(position);
                     items.add(position, itemText);
                     itemsAdapter.notifyDataSetChanged();
@@ -118,9 +118,9 @@ public class MainActivity extends ActionBarActivity {
         File filesDir = getFilesDir();
         File todoFile = new File(filesDir, "todo.txt");
         try {
-            items = new ArrayList<String>(FileUtils.readLines(todoFile));
+            items = new ArrayList<>(FileUtils.readLines(todoFile));
         } catch(IOException e) {
-            items = new ArrayList<String>();
+            items = new ArrayList<>();
         }
     }
 
