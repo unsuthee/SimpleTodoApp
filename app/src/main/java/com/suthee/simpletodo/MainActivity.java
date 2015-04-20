@@ -7,21 +7,19 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import org.apache.commons.io.FileUtils;
+import com.activeandroid.query.Delete;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 
 public class MainActivity extends ActionBarActivity {
 
     ListView lvItems;
-    ArrayList<String> items;
-    ArrayAdapter<String> itemsAdapter;
+    ArrayList<TodoItemModel> items;
+    CustomTodoItemAdapter todoItemAdapter;
 
     private final int REQUEST_EDIT_ITEM_TEXT_CODE = 20;
 
@@ -32,10 +30,11 @@ public class MainActivity extends ActionBarActivity {
 
         lvItems = (ListView) findViewById(R.id.lvItems);
 
-        readItems();
-        itemsAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_list_item_1, items);
-        lvItems.setAdapter(itemsAdapter);
+        // Load all items from the database
+        items = (ArrayList<TodoItemModel>) TodoItemModel.getAll();
+
+        todoItemAdapter = new CustomTodoItemAdapter(this, items);
+        lvItems.setAdapter(todoItemAdapter);
         setupListViewListener();
     }
 
@@ -44,9 +43,14 @@ public class MainActivity extends ActionBarActivity {
                 new AdapterView.OnItemLongClickListener() {
                     @Override
                     public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                        items.remove(position);
-                        itemsAdapter.notifyDataSetChanged();
-                        writeItems();
+                        TodoItemModel removedItem = items.remove(position);
+                        todoItemAdapter.notifyDataSetChanged();
+
+                        // remove this item from the database
+                        new Delete().from(TodoItemModel.class)
+                                .where("Id = ?", removedItem.getId())
+                                .execute();
+
                         return true;
                     }
                 }
@@ -57,8 +61,8 @@ public class MainActivity extends ActionBarActivity {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                         Intent intent = new Intent(MainActivity.this, EditItemActivity.class);
-                        String itemText = itemsAdapter.getItem(position);
-                        intent.putExtra(Intent.EXTRA_TEXT, itemText);
+                        TodoItemModel todoItem = todoItemAdapter.getItem(position);
+                        intent.putExtra(Intent.EXTRA_TEXT, todoItem.name);
                         intent.putExtra(getString(R.string.Intent_List_Position), position);
                         startActivityForResult(intent, REQUEST_EDIT_ITEM_TEXT_CODE);
                     }
@@ -91,9 +95,11 @@ public class MainActivity extends ActionBarActivity {
         EditText etNewItem = (EditText) findViewById(R.id.etNewItem);
         String itemText = etNewItem.getText().toString();
         if (! itemText.isEmpty()) {
-            itemsAdapter.add(itemText);
+            TodoItemModel addItem = new TodoItemModel(itemText, new Date());
+            todoItemAdapter.add(addItem);
             etNewItem.setText("");
-            writeItems();
+
+            addItem.save();
         }
     }
 
@@ -102,35 +108,16 @@ public class MainActivity extends ActionBarActivity {
         if (requestCode == REQUEST_EDIT_ITEM_TEXT_CODE && resultCode == RESULT_OK) {
             String itemText = data.getStringExtra(Intent.EXTRA_TEXT);
             int position = data.getIntExtra(getString(R.string.Intent_List_Position), -1);
-            if (position >= 0 && position < itemsAdapter.getCount()) {
+            if (position >= 0 && position < todoItemAdapter.getCount()) {
                 // We don't update if the itemText remains unchanged
-                if (! items.get(position).equals(itemText)) {
-                    items.remove(position);
-                    items.add(position, itemText);
-                    itemsAdapter.notifyDataSetChanged();
-                    writeItems();
+                if (! items.get(position).name.equals(itemText)) {
+                    TodoItemModel todoItem = todoItemAdapter.getItem(position);
+                    todoItem.name = itemText;
+                    todoItemAdapter.notifyDataSetChanged();
+
+                    todoItem.save();
                 }
             }
-        }
-    }
-
-    private void readItems() {
-        File filesDir = getFilesDir();
-        File todoFile = new File(filesDir, "todo.txt");
-        try {
-            items = new ArrayList<>(FileUtils.readLines(todoFile));
-        } catch(IOException e) {
-            items = new ArrayList<>();
-        }
-    }
-
-    private void writeItems() {
-        File filesDir = getFilesDir();
-        File todoFile = new File(filesDir, "todo.txt");
-        try {
-            FileUtils.writeLines(todoFile, items);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 }
