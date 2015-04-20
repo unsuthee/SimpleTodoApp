@@ -11,8 +11,8 @@ Please review the following checklist to ensure your submission is valid:
 - [x] Did you create an issue on the repo and include /cc @codepathreview @codepath in the issue body?
 
 **Extensions**
-- [ ] Persist the todo items using ActiveAndroid and SQLite
-- [ ] Add Due dates
+- [x] Persist the todo items using ActiveAndroid and SQLite
+- [x] Improved style of the todo items using custom adapter
 
 **Demo:**
 
